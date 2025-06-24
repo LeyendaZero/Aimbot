@@ -1,47 +1,63 @@
-warn(string.char(76, 111, 97, 100, 101, 100) .. " " .. string.char(84, 117, 114, 114, 101, 116) .. " " .. string.char(65, 117, 116, 111) .. " " .. string.char(65, 105, 109))
-local a = game:GetService("Players")
-local b = a.LocalPlayer
-local c = 800 -- bullet velocity you can put between 799-800
-local function d()
-    local e = b.Character
-    return e and e:FindFirstChild("HumanoidRootPart") and (function()
-        local f = e.HumanoidRootPart.Position
-        local g, h = nil, math.huge
-        for _, i in ipairs(a:GetPlayers()) do
-            if i ~= b and i.Team ~= b.Team and i.Character and i.Character:FindFirstChild("HumanoidRootPart") then
-                local j = (i.Character.HumanoidRootPart.Position - f).Magnitude
-                if j < h then
-                    local k = i.Character:FindFirstChildOfClass("Humanoid")
-                    if k and k.Health > 0 then
-                        h = j
-                        g = i
-                    end
-                end
+warn("Loaded Turret Auto Aim")
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local bulletVelocity = 800 -- Velocidad de la bala (puedes cambiar entre 799 y 800)
+
+-- Encuentra al enemigo más cercano y vivo
+local function GetClosestEnemy()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local myPosition = character.HumanoidRootPart.Position
+    local closest = nil
+    local minDistance = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local enemyHRP = player.Character.HumanoidRootPart
+            local distance = (enemyHRP.Position - myPosition).Magnitude
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+            if humanoid and humanoid.Health > 0 and distance < minDistance then
+                minDistance = distance
+                closest = player
             end
         end
-        return g
-    end)()
+    end
+
+    return closest
 end
-local function l(m, n)
-    if not m then return m.Position end
-    local o = m.Velocity
-    return m.Position + (o * n)
+
+-- Calcula cuánto tardará la bala en llegar al objetivo
+local function GetTravelTime(targetPosition)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return 0 end
+
+    local myPosition = character.HumanoidRootPart.Position
+    local distance = (targetPosition - myPosition).Magnitude
+    return distance / bulletVelocity
 end
-local function p(q)
-    local r = b.Character
-    if not r or not r:FindFirstChild("HumanoidRootPart") then return 0 end
-    local s = r.HumanoidRootPart.Position
-    local t = (q - s).Magnitude
-    return t / c
+
+-- Calcula la posición futura del objetivo según su velocidad
+local function PredictPosition(targetHRP, travelTime)
+    if not targetHRP then return nil end
+    return targetHRP.Position + (targetHRP.Velocity * travelTime)
 end
-game:GetService("RunService").Heartbeat:Connect(function()
-    local u = d()
-    if u then
-        local v = u.Character:FindFirstChild("HumanoidRootPart")
-        if v then
-            local w = p(v.Position)
-            local x = l(v, w)
-            game:GetService("ReplicatedStorage"):WaitForChild("Event"):FireServer("aim", {x})
+
+-- Bucle principal del aimbot
+RunService.Heartbeat:Connect(function()
+    local enemy = GetClosestEnemy()
+    if enemy and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = enemy.Character.HumanoidRootPart
+        local timeToHit = GetTravelTime(hrp.Position)
+        local predictedPos = PredictPosition(hrp, timeToHit)
+
+        if predictedPos then
+            ReplicatedStorage:WaitForChild("Event"):FireServer("aim", {predictedPos})
         end
     end
 end)
