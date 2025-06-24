@@ -1,4 +1,4 @@
-warn("Loaded Aimbot with ESP Marker (Mobile Compatible)")
+warn("Loaded Aimbot + ESP with Toggle Button (Mobile Ready)")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -6,11 +6,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local bulletVelocity = 800
-local aimPart -- Parte donde se mostrará el ESP
+local aiming = false
+local aimPart
 
--- Crea un marcador visual con un círculo
+-- Crear marcador ESP
 local function createAimMarker()
-    -- Parte invisible para colocar el marcador
     local part = Instance.new("Part")
     part.Name = "AimbotESPPart"
     part.Anchored = true
@@ -19,7 +19,6 @@ local function createAimMarker()
     part.Transparency = 1
     part.Parent = workspace
 
-    -- BillboardGui encima de la parte
     local billboard = Instance.new("BillboardGui")
     billboard.Size = UDim2.new(0, 20, 0, 20)
     billboard.AlwaysOnTop = true
@@ -36,7 +35,36 @@ local function createAimMarker()
     return part
 end
 
--- Encuentra al enemigo más cercano
+-- Crear botón flotante
+local function createToggleButton()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AimbotToggleGUI"
+    pcall(function() screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
+
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 120, 0, 40)
+    button.Position = UDim2.new(0.5, -60, 1, -60)
+    button.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    button.Text = "Aimbot: OFF"
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 18
+    button.Parent = screenGui
+
+    button.MouseButton1Click:Connect(function()
+        aiming = not aiming
+        if aiming then
+            button.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+            button.Text = "Aimbot: ON"
+        else
+            button.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            button.Text = "Aimbot: OFF"
+            aimPart.Position = Vector3.new(0, -1000, 0) -- ocultar
+        end
+    end)
+end
+
+-- Función para encontrar al enemigo más cercano
 local function GetClosestEnemy()
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
@@ -47,8 +75,8 @@ local function GetClosestEnemy()
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local enemyHRP = player.Character.HumanoidRootPart
-            local distance = (enemyHRP.Position - myPosition).Magnitude
+            local hrp = player.Character.HumanoidRootPart
+            local distance = (hrp.Position - myPosition).Magnitude
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 
             if humanoid and humanoid.Health > 0 and distance < minDistance then
@@ -61,7 +89,7 @@ local function GetClosestEnemy()
     return closest
 end
 
--- Calcula el tiempo de viaje de la bala
+-- Predicción del disparo
 local function GetTravelTime(targetPosition)
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return 0 end
@@ -71,16 +99,18 @@ local function GetTravelTime(targetPosition)
     return distance / bulletVelocity
 end
 
--- Predice la posición futura
 local function PredictPosition(hrp, travelTime)
     return hrp.Position + (hrp.Velocity * travelTime)
 end
 
--- Crear el marcador solo una vez
+-- Inicializar
 aimPart = createAimMarker()
+createToggleButton()
 
--- Loop principal
+-- Loop
 RunService.Heartbeat:Connect(function()
+    if not aiming then return end
+
     local enemy = GetClosestEnemy()
     if enemy and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = enemy.Character.HumanoidRootPart
@@ -88,13 +118,10 @@ RunService.Heartbeat:Connect(function()
         local predictedPos = PredictPosition(hrp, timeToHit)
 
         if predictedPos then
-            -- Mueve el marcador visual al punto predicho
             aimPart.Position = predictedPos
-
-            -- Disparar
             ReplicatedStorage:WaitForChild("Event"):FireServer("aim", {predictedPos})
         end
     else
-        aimPart.Position = Vector3.new(0, -1000, 0) -- lo oculta bajo el mapa
+        aimPart.Position = Vector3.new(0, -1000, 0) -- ocultar si no hay objetivo
     end
 end)
