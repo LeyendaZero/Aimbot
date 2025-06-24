@@ -1,13 +1,35 @@
-warn("Loaded Turret Auto Aim")
+warn("Loaded Turret Auto Aim + ESP")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
-local bulletVelocity = 800 -- Velocidad de la bala (puedes cambiar entre 799 y 800)
+local bulletVelocity = 800
+local aimMarker -- marcador visual
 
--- Encuentra al enemigo más cercano y vivo
+-- Crea el círculo visual en 3D
+local function createAimESP()
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "AimbotESP"
+    billboard.Size = UDim2.new(0, 12, 0, 12)
+    billboard.AlwaysOnTop = true
+    billboard.LightInfluence = 0
+    billboard.Adornee = nil
+
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(1, 0, 1, 0)
+    circle.BackgroundTransparency = 1
+    circle.BorderSizePixel = 2
+    circle.BorderColor3 = Color3.fromRGB(255, 0, 0)
+    circle.Parent = billboard
+
+    billboard.Parent = game.CoreGui
+    return billboard
+end
+
+-- Encuentra al enemigo más cercano
 local function GetClosestEnemy()
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
@@ -32,7 +54,7 @@ local function GetClosestEnemy()
     return closest
 end
 
--- Calcula cuánto tardará la bala en llegar al objetivo
+-- Tiempo que tarda la bala en llegar
 local function GetTravelTime(targetPosition)
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return 0 end
@@ -42,13 +64,15 @@ local function GetTravelTime(targetPosition)
     return distance / bulletVelocity
 end
 
--- Calcula la posición futura del objetivo según su velocidad
-local function PredictPosition(targetHRP, travelTime)
-    if not targetHRP then return nil end
-    return targetHRP.Position + (targetHRP.Velocity * travelTime)
+-- Posición futura predicha
+local function PredictPosition(hrp, travelTime)
+    return hrp.Position + (hrp.Velocity * travelTime)
 end
 
--- Bucle principal del aimbot
+-- Inicia marcador
+aimMarker = createAimESP()
+
+-- Loop principal
 RunService.Heartbeat:Connect(function()
     local enemy = GetClosestEnemy()
     if enemy and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
@@ -57,7 +81,24 @@ RunService.Heartbeat:Connect(function()
         local predictedPos = PredictPosition(hrp, timeToHit)
 
         if predictedPos then
+            -- Fijar la posición del marcador en el mundo
+            if not aimMarker.Adornee then
+                local tempPart = Instance.new("Part")
+                tempPart.Anchored = true
+                tempPart.CanCollide = false
+                tempPart.Transparency = 1
+                tempPart.Size = Vector3.new(0.1, 0.1, 0.1)
+                tempPart.Name = "ESP_Target"
+                tempPart.Parent = workspace
+                aimMarker.Adornee = tempPart
+            end
+
+            aimMarker.Adornee.Position = predictedPos
+
+            -- Disparar
             ReplicatedStorage:WaitForChild("Event"):FireServer("aim", {predictedPos})
         end
+    else
+        aimMarker.Adornee = nil
     end
 end)
