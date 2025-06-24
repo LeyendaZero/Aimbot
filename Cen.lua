@@ -1,35 +1,48 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-local bulletVelocity = 800 -- Puedes ajustar esto según el juego
+local bulletVelocity = 800
+local fovRadius = 100 -- Tamaño del FOV en píxeles
+local aimSmoothness = 0.15 -- Entre 0 (instantáneo) y 1 (muy suave)
 
--- Encuentra al enemigo más cercano con predicción
+-- Devuelve pantalla y distancia de un punto 3D
+local function worldToScreen(pos)
+    local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+    return Vector2.new(screenPos.X, screenPos.Y), onScreen
+end
+
+-- Encuentra enemigo dentro del FOV más cercano
 local function GetClosestEnemy()
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
     local myPos = character.HumanoidRootPart.Position
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local closest = nil
     local closestPredictedPos = nil
     local shortestDist = math.huge
 
     for _, player in ipairs(Players:GetPlayers()) do
-        -- Ignorar si es uno mismo, o está en el mismo equipo
         if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local enemyHRP = player.Character.HumanoidRootPart
-            local enemyHum = player.Character:FindFirstChildOfClass("Humanoid")
+            local hrp = player.Character.HumanoidRootPart
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 
-            if enemyHum and enemyHum.Health > 0 then
-                local distance = (enemyHRP.Position - myPos).Magnitude
+            if humanoid and humanoid.Health > 0 then
+                local distance = (hrp.Position - myPos).Magnitude
                 local travelTime = distance / bulletVelocity
-                local predictedPos = enemyHRP.Position + (enemyHRP.Velocity * travelTime)
+                local predictedPos = hrp.Position + (hrp.Velocity * travelTime)
+                local screenPos, visible = worldToScreen(predictedPos)
 
-                local predictedDistance = (predictedPos - myPos).Magnitude
-                if predictedDistance < shortestDist then
-                    shortestDist = predictedDistance
-                    closest = player
-                    closestPredictedPos = predictedPos
+                if visible then
+                    local distFromCenter = (screenPos - screenCenter).Magnitude
+                    if distFromCenter < fovRadius and distFromCenter < shortestDist then
+                        shortestDist = distFromCenter
+                        closest = player
+                        closestPredictedPos = predictedPos
+                    end
                 end
             end
         end
@@ -38,10 +51,12 @@ local function GetClosestEnemy()
     return closest, closestPredictedPos
 end
 
--- Loop principal para apuntar a enemigo más cercano con predicción
+-- Aimbot suave y limitado por FOV
 RunService.RenderStepped:Connect(function()
-    local _, predictedPos = GetClosestEnemy()
-    if predictedPos then
-        workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, predictedPos)
+    local _, targetPos = GetClosestEnemy()
+    if targetPos then
+        local current = Camera.CFrame
+        local desired = CFrame.new(current.Position, targetPos)
+        Camera.CFrame = current:Lerp(desired, aimSmoothness)
     end
 end)
