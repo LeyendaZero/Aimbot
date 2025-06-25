@@ -1,5 +1,9 @@
-local Workspace = game:GetService("Workspace")
+local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+local bullet = nil
 
-Workspace.ChildAdded:Connect(function(child)
-    print("Nuevo objeto en Workspace: ", child.Name)
+tool.Activated:Connect(function()
+    bullet = workspace:FindFirstChild("Bullet") -- o el nombre real
+    if bullet then
+        print("Bullet velocity:", bullet.Velocity.Magnitude)
+    end
 end)
