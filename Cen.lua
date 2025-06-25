@@ -4,7 +4,7 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
-local bulletVelocity = 800
+local bulletVelocity = 900
 local fovRadius = 100
 local aimSmoothness = 0.30
 
