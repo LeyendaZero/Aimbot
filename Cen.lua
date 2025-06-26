@@ -4,8 +4,8 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
-local bulletVelocity = 850
-local fovRadius = 100
+local bulletVelocity = 750
+local fovRadius = 50
 local aimSmoothness = 0.25
 
 -- Dibujar el FOV
