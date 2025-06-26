@@ -6,7 +6,7 @@ local Camera = Workspace.CurrentCamera
 
 local bulletVelocity = 750
 local fovRadius = 50
-local aimSmoothness = 0.25
+local aimSmoothness = 0.30
 
 -- Dibujar el FOV
 local circle = Drawing.new("Circle")
