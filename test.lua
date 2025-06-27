@@ -1,7 +1,6 @@
 --// Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -10,12 +9,8 @@ local Camera = Workspace.CurrentCamera
 local BULLET_VELOCITY = 1000
 local FOV_RADIUS = 50
 local TARGET_PARTS = { "Head", "Torso", "HumanoidRootPart" }
-local MAX_TARGET_DISTANCE = 300
 local GRAVITY = Workspace.Gravity
-
-local ENABLE_TRIGGERBOT = true
-local ONLY_WHEN_AIMING = true -- solo disparar si presionas clic derecho
-local TRIGGER_ANGLE_THRESHOLD = 2 -- grados de tolerancia para disparar
+local AUTO_FIRE = true -- el juego dispara automáticamente
 
 --// Dibujar FOV
 local circle = Drawing.new("Circle")
@@ -74,10 +69,9 @@ local function GetBestTarget()
                         local predicted = PredictPosition(part)
                         local screenPos, onScreen = WorldToScreen(predicted)
                         local dist = (screenPos - screenCenter).Magnitude
-                        local playerDistance = (predicted - Camera.CFrame.Position).Magnitude
 
                         if onScreen and dist < FOV_RADIUS and dist < (shortestDist or math.huge) then
-                            if playerDistance <= MAX_TARGET_DISTANCE and IsVisible(Camera.CFrame.Position, predicted) then
+                            if IsVisible(Camera.CFrame.Position, predicted) then
                                 bestPos = predicted
                                 shortestDist = dist
                             end
@@ -91,7 +85,7 @@ local function GetBestTarget()
     return bestPos
 end
 
---// Aimbot + TriggerBot Loop
+--// Aimbot loop
 RunService.RenderStepped:Connect(function()
     local targetPosition = GetBestTarget()
     if targetPosition then
@@ -100,15 +94,14 @@ RunService.RenderStepped:Connect(function()
         local currentDirection = Camera.CFrame.LookVector
         local angleDifference = math.deg(math.acos(currentDirection:Dot(desiredDirection)))
 
-        -- Aimbot: apuntar instantáneamente
-        Camera.CFrame = CFrame.new(camPos, targetPosition)
-
-        -- TriggerBot: disparar si está alineado
-        if ENABLE_TRIGGERBOT and angleDifference < TRIGGER_ANGLE_THRESHOLD then
-            if not ONLY_WHEN_AIMING or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-                -- Simula click izquierdo
-                mouse1click() -- Esto solo funciona si estás usando un exploit
-            end
+        if AUTO_FIRE then
+            Camera.CFrame = CFrame.new(camPos, targetPosition)
+        else
+            local smoothness = 0.5
+            local targetCFrame = CFrame.new(camPos, targetPosition)
+            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, smoothness)
         end
+
+        -- Puedes agregar lógica de disparo aquí si estás usando triggerbot
     end
 end)
