@@ -7,7 +7,7 @@ local Camera = Workspace.CurrentCamera
 
 --// Configuración
 local BULLET_VELOCITY = 1000
-local FOV_RADIUS = 50
+local FOV_RADIUS = 100
 local TARGET_PARTS = { "Head", "Torso", "HumanoidRootPart" }
 local GRAVITY = Workspace.Gravity
 local AUTO_FIRE = true -- el juego dispara automáticamente
