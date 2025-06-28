@@ -1,15 +1,17 @@
--- Movimiento anti-predicción
-local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
+-- Pequeñas variaciones aleatorias en dirección del avión
+RunService.Heartbeat:Connect(function()
+    if not LocalPlayer.Character then return end
+    local plane = LocalPlayer.Character:FindFirstChild("Plane") -- o el modelo del avión
+    if not plane then return end
 
-local active = true
+    local bodyVelocity = plane:FindFirstChildOfClass("BodyVelocity") or Instance.new("BodyVelocity", plane)
+    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
 
-RunService.RenderStepped:Connect(function(dt)
-    local char = LocalPlayer.Character
-    if not active or not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local offset = Vector3.new(
+        math.random(-1,1),
+        math.random(-1,1),
+        math.random(-1,1)
+    ) * 20 -- cambiar fuerza según tu juego
 
-    local hrp = char.HumanoidRootPart
-    -- Cambios sutiles en dirección para alterar predicción
-    local randomVec = Vector3.new(math.random(-1,1), 0, math.random(-1,1)) * 5
-    hrp.Velocity = hrp.Velocity + randomVec
+    bodyVelocity.Velocity = plane.Velocity + offset
 end)
