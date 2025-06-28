@@ -1,24 +1,13 @@
--- Servicios básicos
+-- Servicios protegidos
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
--- Protección: intentar obtener RunService sin crashear
-local RunService = nil
-pcall(function()
-    RunService = game:GetService("RunService")
-end)
-
--- Si no existe, detener el script seguro
-if not RunService or not RunService.Heartbeat then
-    warn("❌ RunService o Heartbeat no disponible. Script cancelado para evitar errores.")
-    return
-end
-
--- Variables de control
 local active = false
 local lastHealth = 100
 
--- Crear GUI con botón
+-- Crear GUI
 local function createButton()
     local gui = Instance.new("ScreenGui")
     gui.Name = "AntiPredictGUI"
@@ -42,7 +31,7 @@ local function createButton()
     end)
 end
 
--- Detecta si el personaje está en un avión
+-- Detectar si estás en avión
 local function isPlane(character)
     if not character then return false end
     for _, child in pairs(character:GetChildren()) do
@@ -55,7 +44,7 @@ local function isPlane(character)
     return false
 end
 
--- Evasión rápida si te disparan
+-- Maniobra evasiva reactiva
 local function dodge()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -65,7 +54,7 @@ local function dodge()
     hrp.Velocity = hrp.Velocity + dir * 120
 end
 
--- Loop anti-aim
+-- Loop principal
 RunService.Heartbeat:Connect(function()
     if not active then return end
 
@@ -75,42 +64,44 @@ RunService.Heartbeat:Connect(function()
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
 
-    -- Evasión si te disparan
+    local isFlying = isPlane(char)
+
+    -- Detectar si recibiste daño (te dispararon)
     if hum.Health < lastHealth then
-        dodge()
+        dodge() -- evasión reactiva
     end
     lastHealth = hum.Health
 
-    local isFlying = isPlane(char)
-    local intensity = 1
+    -- Movimiento continuo anti-predict
+    local mult = 1
 
     if not isFlying then
-        -- Si estás corriendo o caminando, aumenta intensidad
+        -- Aumenta intensidad si vas caminando o corriendo
         if hum.MoveDirection.Magnitude > 0 then
-            intensity = 3
+            mult = 2.5
         end
 
         local offset = Vector3.new(
             math.random(-1, 1),
             0,
             math.random(-1, 1)
-        ) * 10 * intensity
+        ) * 10 * mult
 
         hrp.Velocity = hrp.Velocity + offset
     else
-        -- Movimiento aleatorio para aviones
+        -- Para aviones
         local plane = char
         local bv = plane:FindFirstChildOfClass("BodyVelocity") or Instance.new("BodyVelocity", plane)
         bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-        local offset = Vector3.new(math.random(-1,1), math.random(-1,1), math.random(-1,1)) * 25
+        local offset = Vector3.new(math.random(-1,1), math.random(-1,1), math.random(-1,1)) * 20
         bv.Velocity = plane.Velocity + offset
     end
 end)
 
--- Crear GUI al inicio
+-- Crear botón
 createButton()
 
--- Volver a crear botón si mueres y reapareces
+-- Reaparece el botón al morir
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(2)
     if not LocalPlayer.PlayerGui:FindFirstChild("AntiPredictGUI") then
