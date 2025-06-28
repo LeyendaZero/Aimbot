@@ -4,10 +4,10 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- Activador del sistema
 local active = false
+local lastHealth = 100
 
--- Crear botón GUI para activar/desactivar
+-- Crear GUI
 local function createButton()
     local gui = Instance.new("ScreenGui")
     gui.Name = "AntiPredictGUI"
@@ -15,8 +15,8 @@ local function createButton()
     pcall(function() gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 140, 0, 40)
-    btn.Position = UDim2.new(0.5, -70, 1, -80)
+    btn.Size = UDim2.new(0, 160, 0, 40)
+    btn.Position = UDim2.new(0.5, -80, 1, -80)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
     btn.Text = "Anti-Predict: OFF"
     btn.TextColor3 = Color3.new(1, 1, 1)
@@ -31,7 +31,7 @@ local function createButton()
     end)
 end
 
--- Detección automática de tipo de movimiento
+-- Detectar si estás en avión
 local function isPlane(character)
     if not character then return false end
     for _, child in pairs(character:GetChildren()) do
@@ -44,26 +44,52 @@ local function isPlane(character)
     return false
 end
 
--- Comportamiento universal (aéreo o terrestre)
+-- Maniobra evasiva reactiva
+local function dodge()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    local dir = Vector3.new(math.random(-1,1), 0, math.random(-1,1)).Unit
+    hrp.Velocity = hrp.Velocity + dir * 120
+end
+
+-- Loop principal
 RunService.Heartbeat:Connect(function()
     if not active then return end
 
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
     local hrp = char.HumanoidRootPart
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
     local isFlying = isPlane(char)
 
-    -- Movimiento aleatorio terrestre
+    -- Detectar si recibiste daño (te dispararon)
+    if hum.Health < lastHealth then
+        dodge() -- evasión reactiva
+    end
+    lastHealth = hum.Health
+
+    -- Movimiento continuo anti-predict
+    local mult = 1
+
     if not isFlying then
+        -- Aumenta intensidad si vas caminando o corriendo
+        if hum.MoveDirection.Magnitude > 0 then
+            mult = 2.5
+        end
+
         local offset = Vector3.new(
             math.random(-1, 1),
             0,
             math.random(-1, 1)
-        ) * 5
+        ) * 10 * mult
+
         hrp.Velocity = hrp.Velocity + offset
     else
-        -- Movimiento aleatorio para aviones
+        -- Para aviones
         local plane = char
         local bv = plane:FindFirstChildOfClass("BodyVelocity") or Instance.new("BodyVelocity", plane)
         bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
@@ -72,10 +98,10 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Crear botón al cargar
+-- Crear botón
 createButton()
 
--- Si mueres y reapareces, recrear botón
+-- Reaparece el botón al morir
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(2)
     if not LocalPlayer.PlayerGui:FindFirstChild("AntiPredictGUI") then
