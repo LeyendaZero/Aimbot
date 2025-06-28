@@ -25,9 +25,9 @@ local function createESP()
     billboard.Parent = part
 
     local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(1, 0, 1, 0)
-    circle.BackgroundTransparency = 1
-    circle.BorderSizePixel = 2
+    circle.Size = UDim2.new(2, 0, 2, 0)
+    circle.BackgroundTransparency = 0.5
+    circle.BorderSizePixel = 0
     circle.BorderColor3 = Color3.fromRGB(255, 0, 0)
     circle.Parent = billboard
 
