@@ -73,7 +73,7 @@ RunService.Heartbeat:Connect(function()
     lastHealth = hum.Health
 
     -- Movimiento continuo anti-predict
-    local mult = 1
+    local mult = 2
 
     if not isFlying then
         -- Aumenta intensidad si vas caminando o corriendo
@@ -85,7 +85,7 @@ RunService.Heartbeat:Connect(function()
             math.random(-1, 1),
             0,
             math.random(-1, 1)
-        ) * 10 * mult
+        ) * 20 * mult
 
         hrp.Velocity = hrp.Velocity + offset
     else
