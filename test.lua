@@ -85,7 +85,7 @@ RunService.Heartbeat:Connect(function()
             math.random(-1, 1),
             0,
             math.random(-1, 1)
-        ) * 20 * mult
+        ) * 10 * mult
 
         hrp.Velocity = hrp.Velocity + offset
     else
