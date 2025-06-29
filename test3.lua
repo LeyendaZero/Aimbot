@@ -1,49 +1,101 @@
--- Servicios
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
 local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
--- Config
-local AIMBOT_ENABLED = true
-local FIELD_OF_VIEW = 120 -- grados
-local TARGET_PART_NAME = "Head" -- o "HumanoidRootPart"
-local SMOOTHNESS = 0.08 -- cuanto más bajo, más rápido el movimiento
+local bulletVelocity = 800
+local aiming = false
+local aimPart
+local lastFire = 0
 
--- Inicialización de cámara
-local function getScreenCenter()
-    local size = Camera.ViewportSize
-    return Vector2.new(size.X / 2, size.Y / 2)
+-- Crear ESP como punto rojo
+local function createESP()
+    local part = Instance.new("Part")
+    part.Name = "ESP_Target"
+    part.Anchored = true
+    part.CanCollide = false
+    part.Size = Vector3.new(0.1, 0.1, 0.1)
+    part.Transparency = 1
+    part.Position = Vector3.new(0, -1000, 0)
+    part.Parent = workspace
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 6, 0, 6)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = part
+    billboard.Parent = part
+
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.new(1, 0, 1, 0)
+    dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    dot.BackgroundTransparency = 0
+    dot.BorderSizePixel = 0
+    dot.Parent = billboard
+
+    local corner = Instance.new("UICorner", dot)
+    corner.CornerRadius = UDim.new(1, 0)
+
+    return part
 end
 
--- Convierte posición mundial a pantalla
-local function worldToScreen(position)
-    local screenPoint, onScreen = Camera:WorldToViewportPoint(position)
-    return Vector2.new(screenPoint.X, screenPoint.Y), onScreen
+-- Crear botón
+local function createButton()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "AimbotToggleGUI"
+    gui.ResetOnSpawn = false
+    pcall(function() gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 120, 0, 40)
+    btn.Position = UDim2.new(0.5, -60, 1, -70)
+    btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    btn.Text = "Aimbot: OFF"
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Parent = gui
+
+    btn.MouseButton1Click:Connect(function()
+        aiming = not aiming
+        if aiming then
+            btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+            btn.Text = "Aimbot: ON"
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            btn.Text = "Aimbot: OFF"
+            if aimPart then
+                aimPart.Position = Vector3.new(0, -1000, 0)
+            end
+        end
+    end)
 end
 
--- Busca el jugador enemigo más cercano al centro de la pantalla
-local function getClosestTarget()
+-- Reaparece
+LocalPlayer.CharacterAdded:Connect(function()
+    aiming = false
+    task.wait(2)
+    if not LocalPlayer.PlayerGui:FindFirstChild("AimbotToggleGUI") then
+        createButton()
+    end
+end)
+
+-- Buscar enemigo más cercano
+local function GetClosestEnemy()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPosition = character.HumanoidRootPart.Position
+
     local closest = nil
-    local closestDist = math.huge
-    local screenCenter = getScreenCenter()
+    local shortest = math.huge
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+            local dist = (hrp.Position - myPosition).Magnitude
             local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            local part = player.Character:FindFirstChild(TARGET_PART_NAME)
-            if hum and hum.Health > 0 and part then
-                local screenPos, onScreen = worldToScreen(part.Position)
-                if onScreen then
-                    local dist = (screenPos - screenCenter).Magnitude
-                    if dist < FIELD_OF_VIEW and dist < closestDist then
-                        closest = part
-                        closestDist = dist
-                    end
-                end
+            if hum and hum.Health > 0 and dist < shortest then
+                shortest = dist
+                closest = player
             end
         end
     end
@@ -51,19 +103,38 @@ local function getClosestTarget()
     return closest
 end
 
--- Aimbot loop
-RunService.RenderStepped:Connect(function()
-    if not AIMBOT_ENABLED then return end
+-- Predicción
+local function PredictPosition(hrp, time)
+    return hrp.Position + hrp.Velocity * time
+end
 
-    local targetPart = getClosestTarget()
-    if targetPart then
-        local mousePos = UserInputService:GetMouseLocation()
-        local screenPos = worldToScreen(targetPart.Position)
+local function GetTravelTime(targetPos)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return 0 end
+    local myPos = char.HumanoidRootPart.Position
+    return (targetPos - myPos).Magnitude / bulletVelocity
+end
 
-        local dx = (screenPos.X - mousePos.X) * SMOOTHNESS
-        local dy = (screenPos.Y - mousePos.Y) * SMOOTHNESS
+-- Crear ESP y botón
+aimPart = createESP()
+createButton()
 
-        -- Mueve suavemente el mouse hacia el objetivo
-        mousemoverel(dx, dy)
+-- Loop principal
+RunService.Heartbeat:Connect(function(dt)
+    if not aiming then return end
+    lastFire += dt
+    if lastFire < 0.1 then return end
+    lastFire = 0
+
+    local target = GetClosestEnemy()
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = target.Character.HumanoidRootPart
+        local time = GetTravelTime(hrp.Position) * 0.9 -- predicción suavizada
+        local predicted = PredictPosition(hrp, time)
+
+        aimPart.Position = predicted
+        ReplicatedStorage:WaitForChild("Event"):FireServer("aim", {predicted})
+    else
+        aimPart.Position = Vector3.new(0, -1000, 0)
     end
 end)
