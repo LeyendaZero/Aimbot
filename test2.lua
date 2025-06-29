@@ -50,7 +50,7 @@ local function dodge()
     local hrp = char.HumanoidRootPart
 
     local dir = Vector3.new(math.random(-1,1), 0, math.random(-1,1)).Unit
-    hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity + dir * 120
+    hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity + dir * 150
 end
 
 -- Loop principal
@@ -77,7 +77,7 @@ RunService.Heartbeat:Connect(function()
             math.random(-1, 1),
             0,
             math.random(-1, 1)
-        ).Unit * 25
+        ).Unit * 30
 
         hrp.AssemblyLinearVelocity = hrp.AssemblyLinearVelocity + fakeVel
     else
