@@ -60,7 +60,7 @@ local function createButton()
     -- FOV circle
     local fovCircle = Instance.new("Frame")
     fovCircle.Size = UDim2.new(0, FOV_RADIUS * 2, 0, FOV_RADIUS * 2)
-    fovCircle.Position = UDim2.new(0.5, -FOV_RADIUS, 0.5, -FOV_RADIUS)
+    fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
     fovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     fovCircle.BackgroundTransparency = 0.8
     fovCircle.BorderSizePixel = 1
