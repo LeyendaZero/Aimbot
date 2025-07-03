@@ -6,7 +6,7 @@ local Camera = Workspace.CurrentCamera
 
 local bulletVelocity = 1000
 local fovRadius = 150
-local aimSmoothness = 0.50
+local aimSmoothness = 0.3
 
 -- Dibujar el FOV
 local circle = Drawing.new("Circle")
@@ -17,34 +17,23 @@ circle.Transparency = 0.6
 circle.Filled = false
 circle.Visible = true
 
--- Actualizar el círculo en pantalla
 RunService.RenderStepped:Connect(function()
     circle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 end)
 
--- Convierte posición 3D a 2D
+-- Posición de pantalla
 local function worldToScreen(pos)
     local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
     return Vector2.new(screenPos.X, screenPos.Y), onScreen
 end
 
--- Verifica si hay línea de visión libre (sin pared)
-local function isVisible(fromPos, toPos)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
-
-    local result = Workspace:Raycast(fromPos, (toPos - fromPos).Unit * (toPos - fromPos).Magnitude, rayParams)
-    return not result -- si no choca con nada, es visible
-end
-
--- Buscar enemigo más cercano visible dentro del FOV
+-- Obtener enemigo más cercano en FOV
 local function GetClosestEnemy()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
 
-    local myPos = char.HumanoidRootPart.Position
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local myPos = char.HumanoidRootPart.Position
 
     local closest = nil
     local predictedPos = nil
@@ -53,8 +42,9 @@ local function GetClosestEnemy()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local hrp = player.Character.HumanoidRootPart
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health > 0 then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+
+            if hum and hum.Health > 0 then
                 local dist = (hrp.Position - myPos).Magnitude
                 local travelTime = dist / bulletVelocity
                 local futurePos = hrp.Position + (hrp.Velocity * travelTime)
@@ -62,12 +52,13 @@ local function GetClosestEnemy()
                 local screenPos, onScreen = worldToScreen(futurePos)
                 local distFromCenter = (screenPos - screenCenter).Magnitude
 
-                if onScreen and distFromCenter < fovRadius and distFromCenter < shortestDist then
-                    if isVisible(Camera.CFrame.Position, futurePos) then
-                        shortestDist = distFromCenter
-                        closest = player
-                        predictedPos = futurePos
-                    end
+                -- Depuración opcional:
+                -- print(player.Name, "onScreen:", onScreen, "distFromCenter:", math.floor(distFromCenter))
+
+                if onScreen and distFromCenter <= fovRadius and distFromCenter < shortestDist then
+                    closest = player
+                    predictedPos = futurePos
+                    shortestDist = distFromCenter
                 end
             end
         end
@@ -76,7 +67,7 @@ local function GetClosestEnemy()
     return closest, predictedPos
 end
 
--- Aimbot con FOV, predicción, suavidad y detección de paredes
+-- Aimbot
 RunService.RenderStepped:Connect(function()
     local _, targetPos = GetClosestEnemy()
     if targetPos then
