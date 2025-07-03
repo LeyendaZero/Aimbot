@@ -5,7 +5,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local bulletVelocity = 1000
-local fovRadius = 150
+local fovRadius = 100
 local aimSmoothness = 0.3
 
 -- Dibujar el FOV
