@@ -1,9 +1,9 @@
 getgenv().autoTP = false
 getgenv().coords = nil
 
--- Servicios
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 -- Esperar personaje
@@ -24,27 +24,16 @@ coordsText.Center = false
 coordsText.Outline = true
 coordsText.Font = 2
 
--- Botón "Cerrar"
-local closeBtn = Drawing.new("Text")
-closeBtn.Text = "[ Cerrar (Guardar y TP) ]"
-closeBtn.Size = 18
-closeBtn.Color = Color3.fromRGB(255, 0, 0)
-closeBtn.Position = Vector2.new(20, 100)
-closeBtn.Visible = true
-closeBtn.Center = false
-closeBtn.Outline = true
-closeBtn.Font = 2
-
--- Botón Encender/Apagar
-local toggleBtn = Drawing.new("Text")
-toggleBtn.Text = "[ Apagar ]"
-toggleBtn.Size = 18
-toggleBtn.Color = Color3.fromRGB(255, 255, 0)
-toggleBtn.Position = Vector2.new(20, 130)
-toggleBtn.Visible = true
-toggleBtn.Center = false
-toggleBtn.Outline = true
-toggleBtn.Font = 2
+-- Botón único flotante
+local mainBtn = Drawing.new("Text")
+mainBtn.Text = "[ Guardar y Activar AutoTP ]"
+mainBtn.Size = 18
+mainBtn.Color = Color3.fromRGB(255, 200, 0)
+mainBtn.Position = Vector2.new(20, 100)
+mainBtn.Visible = true
+mainBtn.Center = false
+mainBtn.Outline = true
+mainBtn.Font = 2
 
 -- Actualizar coordenadas en pantalla
 RunService.RenderStepped:Connect(function()
@@ -54,34 +43,32 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Función para verificar clics
-local UserInputService = game:GetService("UserInputService")
+-- Verificar clics
 UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         local mousePos = input.Position
 
-        -- Clic en botón "Cerrar"
-        if mousePos.X >= closeBtn.Position.X and mousePos.X <= closeBtn.Position.X + 200 and
-           mousePos.Y >= closeBtn.Position.Y and mousePos.Y <= closeBtn.Position.Y + 20 then
+        if mousePos.X >= mainBtn.Position.X and mousePos.X <= mainBtn.Position.X + 250 and
+           mousePos.Y >= mainBtn.Position.Y and mousePos.Y <= mainBtn.Position.Y + 25 then
 
-            -- Guardar coordenadas
-            hrp = getHRP()
-            getgenv().coords = hrp.Position
-            getgenv().autoTP = true
-            print("[Sistema] Coordenadas guardadas: ", getgenv().coords)
-
-        -- Clic en botón "Encender/Apagar"
-        elseif mousePos.X >= toggleBtn.Position.X and mousePos.X <= toggleBtn.Position.X + 200 and
-               mousePos.Y >= toggleBtn.Position.Y and mousePos.Y <= toggleBtn.Position.Y + 20 then
-
-            getgenv().autoTP = not getgenv().autoTP
-            toggleBtn.Text = getgenv().autoTP and "[ Apagar ]" or "[ Encender ]"
-            print("[Sistema] AutoTP:", getgenv().autoTP)
+            if not getgenv().autoTP then
+                -- Guardar coordenadas y activar
+                hrp = getHRP()
+                getgenv().coords = hrp.Position
+                getgenv().autoTP = true
+                mainBtn.Text = "[ Desactivar AutoTP ]"
+                print("[Sistema] AutoTP activado. Coordenadas guardadas:", getgenv().coords)
+            else
+                -- Desactivar AutoTP
+                getgenv().autoTP = false
+                mainBtn.Text = "[ Guardar y Activar AutoTP ]"
+                print("[Sistema] AutoTP desactivado.")
+            end
         end
     end
 end)
 
--- Bucle de teletransporte cada 60 segundos
+-- Bucle AutoTP
 task.spawn(function()
     while true do
         task.wait(60)
