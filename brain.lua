@@ -1,4 +1,3 @@
--- Variables globales para control
 getgenv().autoTP = false
 getgenv().coords = nil
 
