@@ -14,12 +14,22 @@ local function getHRP()
     return char:WaitForChild("HumanoidRootPart")
 end
 
--- Crear botón flotante
+-- Crear fondo del botón
+local btnBg = Drawing.new("Square")
+btnBg.Size = Vector2.new(220, 25)
+btnBg.Position = Vector2.new(40, 120)
+btnBg.Color = Color3.fromRGB(30, 30, 30)
+btnBg.Thickness = 1
+btnBg.Transparency = 0.6
+btnBg.Filled = true
+btnBg.Visible = true
+
+-- Crear texto del botón
 local btn = Drawing.new("Text")
 btn.Text = "[ Activar AutoTP ]"
 btn.Size = 18
 btn.Color = Color3.fromRGB(255, 255, 0)
-btn.Position = Vector2.new(40, 120)
+btn.Position = btnBg.Position + Vector2.new(5, 3)
 btn.Visible = true
 btn.Outline = true
 btn.Center = false
@@ -39,7 +49,7 @@ notify.Font = 2
 local function showNotify(text, color)
     notify.Text = text
     notify.Color = color or Color3.fromRGB(0, 255, 0)
-    notify.Position = btn.Position + Vector2.new(0, 25)
+    notify.Position = btnBg.Position + Vector2.new(0, 30)
     notify.Visible = true
     task.delay(2, function()
         notify.Visible = false
@@ -50,8 +60,8 @@ end
 UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         local pos = input.Position
-        local btnX, btnY = btn.Position.X, btn.Position.Y
-        local width, height = 220, 25
+        local btnX, btnY = btnBg.Position.X, btnBg.Position.Y
+        local width, height = btnBg.Size.X, btnBg.Size.Y
 
         if pos.X >= btnX and pos.X <= btnX + width and
            pos.Y >= btnY and pos.Y <= btnY + height then
@@ -62,10 +72,12 @@ UserInputService.InputBegan:Connect(function(input)
                getgenv().coords = hrp.Position
                getgenv().autoTP = true
                btn.Text = "[ Desactivar AutoTP ]"
+               btn.Color = Color3.fromRGB(0, 255, 0)
                showNotify("AutoTP activado")
            else
                getgenv().autoTP = false
                btn.Text = "[ Activar AutoTP ]"
+               btn.Color = Color3.fromRGB(255, 255, 0)
                showNotify("AutoTP desactivado", Color3.fromRGB(255, 0, 0))
            end
         end
