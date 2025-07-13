@@ -1,5 +1,5 @@
 -- CONFIGURACIÓN INICIAL
-getgenv().autoTP = true -- siempre activo
+getgenv().autoTP = false
 getgenv().coords = nil
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local function getHRP()
     return char:WaitForChild("HumanoidRootPart")
 end
 
--- Mostrar mensaje flotante
+-- Mostrar notificaciones flotantes
 local notify = Drawing.new("Text")
 notify.Size = 18
 notify.Color = Color3.fromRGB(255, 255, 0)
@@ -31,16 +31,27 @@ local function showNotify(text, color)
     end)
 end
 
--- Guardar posición inicial
-local hrp = getHRP()
-getgenv().coords = hrp.Position
-showNotify("Posición guardada para AutoTP", Color3.fromRGB(0, 200, 255))
-
--- Detector de parte bajo el jugador (para botón)
+-- Bandera para evitar repeticiones al pisar
 local touchedCooldown = false
+local timerStarted = false
 
+-- Temporizador de AutoTP cada 60 segundos (espera activación)
+task.spawn(function()
+    while true do
+        task.wait(60)
+        if getgenv().autoTP and getgenv().coords then
+            pcall(function()
+                local hrp = getHRP()
+                hrp.CFrame = CFrame.new(getgenv().coords)
+                showNotify("AutoTP (60s)", Color3.fromRGB(0, 255, 255))
+            end)
+        end
+    end
+end)
+
+-- Detector de parte bajo el jugador
 RunService.RenderStepped:Connect(function()
-    if not getgenv().autoTP or touchedCooldown then return end
+    if touchedCooldown then return end
 
     local hrp = getHRP()
     local position = hrp.Position
@@ -49,27 +60,26 @@ RunService.RenderStepped:Connect(function()
     for _, part in pairs(parts) do
         if part:IsA("BasePart") and part.Transparency < 1 and part.CanCollide then
             touchedCooldown = true
+
             task.delay(0.2, function()
-                hrp.CFrame = CFrame.new(getgenv().coords)
-                showNotify("¡AutoTP al pisar botón!", Color3.fromRGB(255, 100, 0))
+                -- Guardar coordenadas y activar temporizador si aún no se ha hecho
+                if not getgenv().autoTP then
+                    getgenv().coords = getHRP().Position
+                    getgenv().autoTP = true
+                    showNotify("¡AutoTP activado!", Color3.fromRGB(0, 255, 0))
+                end
+
+                -- Teletransportar inmediatamente
+                pcall(function()
+                    hrp.CFrame = CFrame.new(getgenv().coords)
+                    showNotify("TP inmediato al pisar", Color3.fromRGB(255, 100, 0))
+                end)
+
                 task.wait(2)
                 touchedCooldown = false
             end)
-            break
-        end
-    end
-end)
 
--- TP automático cada 60 segundos
-task.spawn(function()
-    while true do
-        task.wait(60)
-        if getgenv().autoTP and getgenv().coords then
-            pcall(function()
-                local hrp = getHRP()
-                hrp.CFrame = CFrame.new(getgenv().coords)
-                showNotify("AutoTP cada 60s", Color3.fromRGB(0, 255, 255))
-            end)
+            break
         end
     end
 end)
