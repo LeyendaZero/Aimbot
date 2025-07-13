@@ -1,5 +1,5 @@
 -- CONFIGURACIÓN INICIAL
-getgenv().autoTP = true -- siempre activo, puedes cambiarlo si quieres alternarlo
+getgenv().autoTP = false
 getgenv().coords = nil
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local function getHRP()
     return char:WaitForChild("HumanoidRootPart")
 end
 
--- Mostrar mensaje flotante (opcional)
+-- Mostrar notificaciones flotantes
 local notify = Drawing.new("Text")
 notify.Size = 18
 notify.Color = Color3.fromRGB(255, 255, 0)
@@ -31,36 +31,52 @@ local function showNotify(text, color)
     end)
 end
 
--- Guardar la posición al cargar
-local hrp = getHRP()
-getgenv().coords = hrp.Position
-showNotify("Posición guardada para AutoTP", Color3.fromRGB(0, 200, 255))
-
--- Detector de parte bajo el jugador
+-- Bandera para evitar múltiples activaciones al pisar
 local touchedCooldown = false
 
+-- Temporizador que inicia cuando activas AutoTP
+task.spawn(function()
+    while true do
+        task.wait(60)
+        if getgenv().autoTP and getgenv().coords then
+            pcall(function()
+                local hrp = getHRP()
+                hrp.CFrame = CFrame.new(getgenv().coords)
+                showNotify("AutoTP (cada 60s)", Color3.fromRGB(0, 255, 255))
+            end)
+        end
+    end
+end)
+
+-- Detección al pisar "PlotBlock"
 RunService.RenderStepped:Connect(function()
-    if not getgenv().autoTP or touchedCooldown then return end
+    if touchedCooldown then return end
 
     local hrp = getHRP()
-    local position = hrp.Position
+    local parts = workspace:GetPartBoundsInBox(hrp.CFrame, Vector3.new(4, 1, 4))
 
-    -- Buscar partes debajo
-    local parts = workspace:GetPartBoundsInBox(CFrame.new(position), Vector3.new(4, 1, 4))
-    
     for _, part in pairs(parts) do
-        if part:IsA("BasePart") and part.Transparency < 1 and part.CanCollide then
-            -- Opcional: puedes agregar filtros aquí, como por nombre o color del botón
+        if part:IsA("BasePart") and part.Name == "PlotBlock" then
             touchedCooldown = true
 
-            -- Teletransportar
-            task.delay(0.2, function()
-                hrp.CFrame = CFrame.new(getgenv().coords)
-                showNotify("¡AutoTP al pisar botón!", Color3.fromRGB(255, 100, 0))
+            task.spawn(function()
+                -- Si aún no estaba activo, activar AutoTP
+                if not getgenv().autoTP then
+                    getgenv().coords = getHRP().Position
+                    getgenv().autoTP = true
+                    showNotify("AutoTP activado", Color3.fromRGB(0, 255, 0))
+                end
+
+                -- Teletransportar inmediatamente
+                pcall(function()
+                    hrp.CFrame = CFrame.new(getgenv().coords)
+                    showNotify("TP inmediato al pisar PlotBlock", Color3.fromRGB(255, 100, 0))
+                end)
+
                 task.wait(2)
                 touchedCooldown = false
             end)
-            
+
             break
         end
     end
