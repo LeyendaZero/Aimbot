@@ -15,7 +15,7 @@ end
 local hrp = getHRP()
 getgenv().coords = hrp.Position
 
--- Notificación (opcional)
+-- Mostrar notificación
 local notify = Drawing.new("Text")
 notify.Size = 18
 notify.Color = Color3.fromRGB(255, 255, 0)
@@ -34,7 +34,13 @@ local function showNotify(text, color)
     end)
 end
 
--- TP inmediato al pisar "StealHitbox"
+-- Comprobar si el color es amarillo
+local function isYellow(color)
+    local r, g, b = color.R, color.G, color.B
+    return r > 0.9 and g > 0.8 and b < 0.3 -- amarillo fuerte
+end
+
+-- Teleport si pisas parte amarilla
 RunService.RenderStepped:Connect(function()
     if not getgenv().autoTP then return end
 
@@ -42,10 +48,10 @@ RunService.RenderStepped:Connect(function()
     local parts = workspace:GetPartBoundsInBox(hrp.CFrame, Vector3.new(4, 2, 4))
 
     for _, part in pairs(parts) do
-        if part:IsA("BasePart") and part.Name == "StealHitbox" then
+        if part:IsA("BasePart") and isYellow(part.Color) then
             pcall(function()
                 hrp.CFrame = CFrame.new(getgenv().coords)
-                showNotify("TP desde StealHitbox", Color3.fromRGB(255, 100, 0))
+                showNotify("TP desde parte amarilla", Color3.fromRGB(255, 255, 0))
             end)
             break
         end
