@@ -1,4 +1,3 @@
--- CONFIGURACIÓN
 getgenv().autoTP = true
 getgenv().coords = nil
 
@@ -12,11 +11,11 @@ local function getHRP()
     return char:WaitForChild("HumanoidRootPart")
 end
 
--- Guardar posición inicial para teletransporte
+-- Guardar posición inicial
 local hrp = getHRP()
 getgenv().coords = hrp.Position
 
--- Mostrar notificación (opcional)
+-- Notificación (opcional)
 local notify = Drawing.new("Text")
 notify.Size = 18
 notify.Color = Color3.fromRGB(255, 255, 0)
@@ -30,12 +29,12 @@ local function showNotify(text, color)
     notify.Text = text
     notify.Color = color or Color3.fromRGB(0, 255, 0)
     notify.Visible = true
-    task.delay(1, function()
+    task.delay(1.5, function()
         notify.Visible = false
     end)
 end
 
--- Teleport cada vez que estás encima de "PlotBlock"
+-- TP inmediato al pisar "StealHitbox"
 RunService.RenderStepped:Connect(function()
     if not getgenv().autoTP then return end
 
@@ -43,11 +42,10 @@ RunService.RenderStepped:Connect(function()
     local parts = workspace:GetPartBoundsInBox(hrp.CFrame, Vector3.new(4, 2, 4))
 
     for _, part in pairs(parts) do
-        if part:IsA("BasePart") and part.Name == "PlotBlock" then
-            -- Teletransportar rápidamente a la posición guardada
+        if part:IsA("BasePart") and part.Name == "StealHitbox" then
             pcall(function()
                 hrp.CFrame = CFrame.new(getgenv().coords)
-                showNotify("TP desde PlotBlock", Color3.fromRGB(255, 100, 0))
+                showNotify("TP desde StealHitbox", Color3.fromRGB(255, 100, 0))
             end)
             break
         end
