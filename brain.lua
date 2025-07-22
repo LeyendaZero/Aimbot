@@ -2,15 +2,14 @@ local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local root = char:WaitForChild("HumanoidRootPart")
 
--- Crear BodyVelocity
-local bv = Instance.new("BodyVelocity")
-bv.Velocity = Vector3.new(0, 100, 0) -- Velocidad hacia arriba
-bv.MaxForce = Vector3.new(0, 1e6, 0)
-bv.P = 1e4
-bv.Parent = root
+-- Altura por encima del techo (ajústala si el techo es más alto)
+local safeHeight = 200
 
--- Esperar hasta alcanzar la altura
-task.wait(0.5) -- ajusta según resultado
+-- Posición deseada encima del jugador
+local targetPos = root.Position + Vector3.new(0, 50, 0)
 
--- Eliminar para evitar caída infinita
-bv:Destroy()
+-- Paso 1: teleportarse muy alto
+root.CFrame = CFrame.new(targetPos.X, targetPos.Y + safeHeight, targetPos.Z)
+
+-- Paso 2: dejar caer naturalmente (el servidor piensa que caíste desde arriba)
+char.Humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
