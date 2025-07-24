@@ -1,29 +1,33 @@
-local player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
-local workspace = game:GetService("Workspace")
+local humanoid = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
 
--- Posición deseada encima del personaje (ajustar si hay techo)
-local basePos = root.Position + Vector3.new(0, 50, 0)
-local fallHeight = 100  -- Cuánto más alto caerás desde
-local dropPos = basePos + Vector3.new(0, fallHeight, 0)
+local height = 75
 
--- Crear plataforma invisible en destino
-local platform = Instance.new("Part")
-platform.Size = Vector3.new(5, 1, 5)
-platform.Anchored = true
-platform.CanCollide = true
-platform.Transparency = 1  -- Invisible
-platform.Position = basePos
-platform.Parent = workspace
+local function teleportOnFreefall()
+    print("Esperando estado Freefall...")
 
--- Teleportarte arriba
-task.wait(0.1)
-root.CFrame = CFrame.new(dropPos)
-char.Humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+            -- Desconectar para evitar múltiples teleports
+            connection:Disconnect()
 
--- Esperar a que "caigas" sobre la plataforma
-task.wait(0.6) -- Ajusta si el retardo del anticheat es más corto/largo
+            -- Esperar un poco para asegurar sincronía
+            wait(0.15)
 
--- Destruir plataforma (opcional)
-platform:Destroy()
+            -- Teleport mientras estás cayendo
+            hrp.CFrame = hrp.CFrame + Vector3.new(0, height, 0)
+            print("✅ Teleport ejecutado durante caída")
+        end
+    end)
+
+    -- Hacer que el personaje salte (caída garantizada)
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+end
+
+teleportOnFreefall()
