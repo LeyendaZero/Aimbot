@@ -1,7 +1,7 @@
 -- === CONFIGURACIÓN ===
 local GAME_ID = 109983668079237 -- ID oficial del juego Steal a Brainrot 2
 local REPLIT_URL = "https://66d1c513-45e4-4df8-9e30-a8ae8a89584d-00-2di4zs538rhis.janeway.replit.dev/"
-local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/XXX/YYY"
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1398405036253646849/eduChknG-GHdidQyljf3ONIvGebPSs7EqP_68sS_FV_nZc3bohUWlBv2BY3yy3iIMYmA"
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
