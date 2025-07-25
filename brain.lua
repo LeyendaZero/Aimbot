@@ -35,7 +35,7 @@ function reportBrainrot(jobId, position)
     }
 
     syn.request({
-        Url = DISCORD_WEBHOOK,
+        Url = https://discord.com/api/webhooks/1398405036253646849/eduChknG-GHdidQyljf3ONIvGebPSs7EqP_68sS_FV_nZc3bohUWlBv2BY3yy3iIMYmA,
         Method = "POST",
         Headers = {["Content-Type"] = "application/json"},
         Body = HttpService:JSONEncode(payload)
