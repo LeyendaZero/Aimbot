@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 function getJobsFromGitHub()
     local response = syn.request({
-        Url = JOB_LIST_URL,
+        Url = https://raw.githubusercontent.com/LeyendaZero/StealBrainrot/main/joblist.json,
         Method = "GET"
     })
     local data = HttpService:JSONDecode(response.Body)
