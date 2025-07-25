@@ -1,33 +1,71 @@
+-- === CONFIGURACIÓN ===
+local GAME_ID = 109983668079237 -- ID oficial del juego Steal a Brainrot 2
+local REPLIT_URL = "https://66d1c513-45e4-4df8-9e30-a8ae8a89584d-00-2di4zs538rhis.janeway.replit.dev/"
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/XXX/YYY"
+
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local humanoid = char:WaitForChild("Humanoid")
-local hrp = char:WaitForChild("HumanoidRootPart")
-
-local height = 75
-
-local function teleportOnFreefall()
-    print("Esperando estado Freefall...")
-
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-            -- Desconectar para evitar múltiples teleports
-            connection:Disconnect()
-
-            -- Esperar un poco para asegurar sincronía
-            wait(0.15)
-
-            -- Teleport mientras estás cayendo
-            hrp.CFrame = hrp.CFrame + Vector3.new(0, height, 0)
-            print("✅ Teleport ejecutado durante caída")
-        end
-    end)
-
-    -- Hacer que el personaje salte (caída garantizada)
-    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+-- === FUNCIONES ===
+function getJobFromReplit()
+    local res = syn.request({Url=REPLIT_URL, Method="GET"})
+    local body = HttpService:JSONDecode(res.Body)
+    return body.job
 end
 
-teleportOnFreefall()
+function reportBrainrot(jobId)
+    local payload = {
+        content = "",
+        embeds = {{
+            title = "🧠 Brainrot Detectado en Steal a Brainrot",
+            color = 65280,
+            fields = {
+                {name="Job ID", value=jobId or "unknown"},
+                {name="Cuenta", value=LocalPlayer.Name}
+            }
+        }}
+    }
+    syn.request({
+        Url = DISCORD_WEBHOOK,
+        Method = "POST",
+        Headers = {["Content-Type"]="application/json"},
+        Body = HttpService:JSONEncode(payload)
+    })
+end
+
+function detectBrainrot()
+    -- Aquí defines cómo se ve: por ejemplo NPCs dentro de workspace.Brainrots
+    if workspace:FindFirstChild("Brainrots") then
+        for _, br in pairs(workspace.Brainrots:GetChildren()) do
+            if br.ClassName == "Model" then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- === LOOP PRINCIPAL ===
+while true do
+    local jobId = getJobFromReplit()
+    if not jobId then
+        warn("✅ Sin más servidores disponibles.")
+        break
+    end
+
+    print("🔁 Teleport a servidor JobID:", jobId)
+    TeleportService:TeleportToPlaceInstance(GAME_ID, jobId, LocalPlayer)
+    repeat wait(2) until game:IsLoaded()
+    wait(3) -- espera carga de modelo
+
+    if detectBrainrot() then
+        print("✅ Brainrot encontrado!")
+        reportBrainrot(jobId)
+        break
+    else
+        print("❌ Nada detectado. Solicitando otro servidor...")
+        wait(2)
+    end
+end
