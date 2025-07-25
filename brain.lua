@@ -1,6 +1,6 @@
--- === CONFIGURACIÓN ===
-local GAME_ID = 109983668079237 -- ID oficial del juego Steal a Brainrot 2
-local REPLIT_URL = "https://leyendazero.github.io/StealBrainrot/joblist.json"
+-- ⚙️ CONFIGURACIÓN
+local GAME_ID = 109983668079237
+local JOB_LIST_URL = "https://leyendazero.github.io/StealBrainrot/joblist.json" -- 🔁 Pega aquí tu link
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1398405036253646849/eduChknG-GHdidQyljf3ONIvGebPSs7EqP_68sS_FV_nZc3bohUWlBv2BY3yy3iIMYmA"
 
 local HttpService = game:GetService("HttpService")
@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 function getJobsFromGitHub()
     local response = syn.request({
-        Url = https://raw.githubusercontent.com/LeyendaZero/StealBrainrot/main/joblist.json,
+        Url = JOB_LIST_URL,
         Method = "GET"
     })
     local data = HttpService:JSONDecode(response.Body)
@@ -35,7 +35,7 @@ function reportBrainrot(jobId, position)
     }
 
     syn.request({
-        Url = https://discord.com/api/webhooks/1398405036253646849/eduChknG-GHdidQyljf3ONIvGebPSs7EqP_68sS_FV_nZc3bohUWlBv2BY3yy3iIMYmA,
+        Url = DISCORD_WEBHOOK,
         Method = "POST",
         Headers = {["Content-Type"] = "application/json"},
         Body = HttpService:JSONEncode(payload)
@@ -77,3 +77,4 @@ for _, jobId in ipairs(jobs) do
         wait(2)
     end
 end
+
