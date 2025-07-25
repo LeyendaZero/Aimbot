@@ -10,15 +10,22 @@ local LocalPlayer = Players.LocalPlayer
 
 -- 📡 FUNCIONES
 
+-- 🔐 Selección automática de función de request
+local requestFunc = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request)
+if not requestFunc then
+    warn("❌ Tu ejecutor no soporta funciones HTTP.")
+    return
+end
+
 function getJobsFromGitHub()
-    local response = syn.request({
+    local response = requestFunc({
         Url = JOB_LIST_URL,
         Method = "GET"
     })
-    local data = HttpService:JSONDecode(response.Body)
+    local data = game:GetService("HttpService"):JSONDecode(response.Body)
     return data.jobs
 end
-
+-- ////////)/)final///////
 function reportBrainrot(jobId, position)
     local payload = {
         content = "",
